@@ -1,0 +1,13 @@
+import javax.swing.JFrame;
+
+public class ClientMain {
+
+	public static void main(String[] args) {
+		Client clientServer;
+		clientServer = new Client("127.0.0.1");
+		clientServer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		clientServer.startRunning();
+		
+	}
+
+}
