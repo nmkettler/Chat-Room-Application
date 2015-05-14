@@ -1,0 +1,137 @@
+import java.io.*;
+import java.net.*;
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+
+public class Server extends JFrame{
+
+	private JTextField userText;
+	private JTextArea chatWindow;
+	private ObjectOutputStream output; //stream that flows from my computer to friends computer
+	private ObjectInputStream input;
+	private ServerSocket server; 
+	private Socket connection;  //socket= connection between two computers
+	
+	//constructor
+	public Server(){
+		super("Grrreat Instant Messenger");
+		userText = new JTextField();
+		userText.setEditable(false); //doesn't allow user to click in
+		userText.addActionListener(
+				new ActionListener(){
+					public void actionPerformed(ActionEvent e){
+						sendMessage(e.getActionCommand());
+						userText.setText(""); //after send text, text area clears
+					}					
+				}
+				);
+		add(userText, BorderLayout.NORTH);
+		chatWindow = new JTextArea();
+		add(new JScrollPane(chatWindow));
+		setSize(500, 250);
+		setVisible(true);
+	}
+	
+	//set up and run the server
+	public void startRunning(){
+		try{
+			server = new ServerSocket(6789, 100); //6789 is the port number(where do you want to connect), 100 is backlog(# people can wait to talk to you)
+			while(true){
+				try{
+					//connect/have convo w/ someone else
+					waitForConnection();
+					setupStreams();
+					whileChatting();
+				}catch(EOFException eofException){ //end of connection or end of stream
+					showMessage("\n Server ended the connection.");
+				}finally{
+					closeUneeded();
+				}
+			}
+		}catch(IOException ioException){
+			ioException.printStackTrace();
+		}
+	}
+	//wait for connection, then display connection information
+	private void waitForConnection() throws IOException{
+		showMessage("Waiting for someone to connect. \n");
+		connection = server.accept(); //blocks a connection until it's made
+		showMessage("Connected to " + connection.getInetAddress().getHostName()); //returns your address once connected & host ip adress
+	}
+	
+	//get stream to send and receive data/messages
+	
+	private void setupStreams()throws IOException{
+		output = new ObjectOutputStream(connection.getOutputStream());
+		output.flush(); //send leftover data/bytes to the other person
+		input = new ObjectInputStream(connection.getInputStream());
+		showMessage("\n Streams are now connected \n");
+	}
+	
+	//during the chat conversation
+	
+	private void whileChatting() throws IOException{
+		String message =  "You are now connected.";
+		sendMessage(message);
+		ableToType(true); //will allow user to type in text box
+		do{
+			//have a conversation
+			try{
+				message = (String) input.readObject(); //reads whatever user sends and stores it in message var
+				showMessage("\n " + message);
+			}catch(ClassNotFoundException classNotFoundException){
+				showMessage("\n Error, user did not send");
+			}
+		}while(!message.equals("Client - END")); //if user types END program will stop
+	}
+	
+	//close streams and sockets after done chatting
+	
+	private void closeUneeded() throws IOException{
+		showMessage("\n Closing connections \n");
+		ableToType(false);
+		try{
+			output.close();
+			input.close();
+			connection.close(); //if these aren't closed, it will waste memory
+		}catch(IOException ioException){
+			ioException.printStackTrace(); //printStackTrace shows the error message
+		}
+	}
+	
+	//send a message to client(comp connected to server)
+	private void sendMessage(String message){
+		try{
+			output.writeObject("Server - " + message); //writeObject is a java method that sends message to output stream
+			output.flush(); //in case any bytes are left over, flush them out
+			showMessage("\nServer- " + message); //will show previous messages in Text Field
+		}catch(IOException ioException){
+			chatWindow.append("\n ERRROR: CAN'T SEND MESSAGE"); //append adds to chatWindow
+		}
+	}
+	
+	//updates chatWindow the only part of the GUI that is updated
+	private void showMessage(final String text){ //everything that shows up in chatWindow will be a stream
+		SwingUtilities.invokeLater( //updates text in chat window
+				new Runnable(){ //creates a thread to update the GUI
+					public void run(){
+						chatWindow.append(text);
+					}
+				}			
+			);
+	}
+	
+	//let user type into their box
+	
+	private void ableToType(final boolean trueOrFalse){
+		SwingUtilities.invokeLater(
+				new Runnable(){
+					public void run(){
+						userText.setEditable(trueOrFalse);
+					}
+				}
+			);
+	}
+	
+}
