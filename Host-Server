@@ -8,6 +8,7 @@ public class Server extends JFrame{
 
 	private JTextField userText;
 	private JTextArea chatWindow;
+	private JButton send;
 	private ObjectOutputStream output; //stream that flows from my computer to friends computer
 	private ObjectInputStream input;
 	private ServerSocket server; 
@@ -17,6 +18,16 @@ public class Server extends JFrame{
 	public Server(){
 		super("Grrreat Instant Messenger");
 		userText = new JTextField();
+		send = new JButton("Send");		
+		send.addActionListener(
+				new ActionListener(){
+					public void actionPerformed(ActionEvent ae){
+						if(ae.getSource() == send){
+						sendMessage(ae.getActionCommand());
+						}
+					}
+				}
+				);
 		userText.setEditable(false); //doesn't allow user to click in
 		userText.addActionListener(
 				new ActionListener(){
@@ -27,6 +38,7 @@ public class Server extends JFrame{
 				}
 				);
 		add(userText, BorderLayout.NORTH);
+		add(send, BorderLayout.SOUTH);
 		chatWindow = new JTextArea();
 		add(new JScrollPane(chatWindow));
 		setSize(500, 250);
